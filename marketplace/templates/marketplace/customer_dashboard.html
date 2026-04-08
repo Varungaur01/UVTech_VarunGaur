@@ -1,66 +1,197 @@
 {% extends 'marketplace/base.html' %}
-
 {% block title %}Dashboard - Neighbourhood Service Marketplace{% endblock %}
 
 {% block content %}
-<div class="container my-5">
-    <div class="row">
-        <div class="col-md-8">
-            <h2>Welcome back, {{ user.first_name }}!</h2>
-            <p class="text-muted">Location: {{ user_profile.location }}</p>
-        </div>
-        <div class="col-md-4 text-end">
-            <a href="{% url 'profile' %}" class="btn btn-outline-primary">Edit Profile</a>
-        </div>
+
+<style>
+:root {
+  --mauve:#b07f95;
+  --peach:#e8a090;
+  --ink:#3b2a32;
+  --ink-muted:#9a8490;
+  --surface:#fdf8f5;
+  --border:#e8dcd8;
+}
+
+.dashboard {
+  max-width: 1100px;
+  margin: auto;
+  padding: 40px 20px;
+}
+
+/* HEADER */
+.dashboard-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:30px;
+}
+
+.dashboard-title {
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.role-badge {
+  background:#f3e8f0;
+  color:var(--mauve);
+  padding:6px 14px;
+  border-radius:999px;
+  font-size:13px;
+}
+
+/* GRID */
+.dashboard-grid {
+  display:grid;
+  grid-template-columns: 2fr 1fr;
+  gap:25px;
+}
+
+.card-custom {
+  background:white;
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:20px;
+}
+
+/* BOOKINGS */
+.booking-item {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:15px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  margin-bottom:12px;
+  transition:0.2s;
+}
+
+.booking-item:hover {
+  transform:translateY(-2px);
+}
+
+.status {
+  font-size:12px;
+  padding:5px 10px;
+  border-radius:999px;
+}
+
+.pending { background:#fff3cd; }
+.accepted { background:#d1e7dd; }
+.completed { background:#cfe2ff; }
+
+/* BUTTONS */
+.btn-action {
+  padding:6px 10px;
+  border-radius:8px;
+  border:none;
+  cursor:pointer;
+  font-size:13px;
+}
+
+.btn-review {
+  background:linear-gradient(135deg,var(--mauve),var(--peach));
+  color:white;
+}
+
+/* EMPTY STATE */
+.empty-box {
+  text-align:center;
+  padding:40px;
+  border:2px dashed var(--border);
+  border-radius:16px;
+  color:var(--ink-muted);
+}
+</style>
+
+<div class="dashboard">
+
+  <!-- HEADER -->
+  <div class="dashboard-header">
+    <div>
+      <h1 class="dashboard-title">
+        Welcome, {{ user.first_name|default:"User" }} 👋
+      </h1>
+      <p class="text-muted">
+        Manage your bookings and services
+      </p>
     </div>
 
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5>Your Bookings</h5>
-                </div>
-                <div class="card-body">
-                    {% if bookings %}
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Service</th>
-                                        <th>Provider</th>
-                                        <th>Status</th>
-                                        <th>Date</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for booking in bookings %}
-                                        <tr>
-                                            <td>{{ booking.service.title }}</td>
-                                            <td>{{ booking.service.provider.username }}</td>
-                                            <td>
-                                                <span class="badge bg-{% if booking.status == 'pending' %}warning{% elif booking.status == 'accepted' %}success{% elif booking.status == 'completed' %}info{% else %}secondary{% endif %}">
-                                                    {{ booking.get_status_display }}
-                                                </span>
-                                            </td>
-                                            <td>{{ booking.booking_date|date:"M d, Y H:i" }}</td>
-                                            <td>
-                                                {% if booking.status == 'completed' and not booking.review %}
-                                                    <a href="{% url 'submit_review' booking.id %}" class="btn btn-sm btn-primary">Review</a>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <p class="text-muted">You haven't made any bookings yet.</p>
-                        <a href="{% url 'service_list' %}" class="btn btn-primary">Find Services</a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+    <div class="role-badge">
+      Customer
     </div>
+  </div>
+
+  <!-- GRID -->
+  <div class="dashboard-grid">
+
+    <!-- BOOKINGS -->
+    <div>
+      <h3 style="margin-bottom:15px;">🕒 Recent Bookings</h3>
+
+      {% if bookings %}
+        {% for booking in bookings %}
+          <div class="booking-item">
+
+            <div>
+              <strong>{{ booking.service.title }}</strong><br>
+              <small class="text-muted">
+                {{ booking.booking_date|date:"M d, Y H:i" }}
+              </small>
+            </div>
+
+            <div>
+              <!-- STATUS -->
+              <span class="status 
+                {% if booking.status == 'pending' %}pending
+                {% elif booking.status == 'accepted' %}accepted
+                {% elif booking.status == 'completed' %}completed
+                {% endif %}">
+                {{ booking.get_status_display }}
+              </span>
+            </div>
+
+            <div>
+              {% if booking.status == 'completed' and not booking.review %}
+                <a href="{% url 'submit_review' booking.id %}" class="btn-action btn-review">
+                  ⭐ Review
+                </a>
+              {% endif %}
+            </div>
+
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-box">
+          <p>No bookings yet 😔</p>
+          <a href="{% url 'service_list' %}" class="btn-review" style="padding:10px 16px; display:inline-block; margin-top:10px;">
+            Browse Services
+          </a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div>
+      <h3 style="margin-bottom:15px;">💬 Messages</h3>
+
+      <div class="card-custom">
+        <p style="color:var(--ink-muted); text-align:center;">
+          Chat feature coming soon 🚀<br>
+          (You can impress judges by adding this next!)
+        </p>
+      </div>
+
+      <!-- EXTRA CARD -->
+      <div class="card-custom" style="margin-top:20px;">
+        <h5>📊 Quick Stats</h5>
+        <p>Total Bookings: {{ bookings|length }}</p>
+        <p>Completed: {{ bookings|dictsort:"status"|length }}</p>
+      </div>
+    </div>
+
+  </div>
+
 </div>
+
 {% endblock %}
