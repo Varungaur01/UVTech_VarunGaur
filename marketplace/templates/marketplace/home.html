@@ -1,0 +1,49 @@
+{% extends 'marketplace/base.html' %}
+
+{% block title %}Home - Neighbourhood Service Marketplace{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center">
+                <h1 class="display-4 fw-bold">Find Trusted Local Services</h1>
+                <p class="lead">Connect with reliable service providers in your neighbourhood for all your needs.</p>
+                <a href="{% url 'service_list' %}" class="btn btn-light btn-lg">Browse Services</a>
+                {% if not user.is_authenticated %}
+                    <a href="{% url 'register' %}" class="btn btn-outline-light btn-lg ms-2">Join Now</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">For Customers</h5>
+                    <p class="card-text">Find and book trusted local service providers for plumbing, electrical work, tutoring, and more.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">For Service Providers</h5>
+                    <p class="card-text">Showcase your skills, manage bookings, and grow your local business.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Local & Reliable</h5>
+                    <p class="card-text">Connect with verified professionals in your area for quality service.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends 'marketplace/base.html' %}
+
+{% block title %}Provider Dashboard - Neighbourhood Service Marketplace{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-8">
+            <h2>Welcome back, {{ user.first_name }}!</h2>
+            <p class="text-muted">Location: {{ user_profile.location }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'profile' %}" class="btn btn-outline-primary">Edit Profile</a>
+            <a href="{% url 'create_service' %}" class="btn btn-primary ms-2">Add Service</a>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Your Services</h5>
+                </div>
+                <div class="card-body">
+                    {% if services %}
+                        {% for service in services %}
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <h6>{{ service.title }}</h6>
+                                    <small class="text-muted">{{ service.category }} - ${{ service.price }}</small>
+                                </div>
+                                <div>
+                                    <a href="{% url 'edit_service' service.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">You haven't added any services yet.</p>
+                        <a href="{% url 'create_service' %}" class="btn btn-primary">Add Your First Service</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Recent Bookings</h5>
+                </div>
+                <div class="card-body">
+                    {% if bookings %}
+                        {% for booking in bookings|slice:":5" %}
+                            <div class="mb-3">
+                                <h6>{{ booking.service.title }}</h6>
+                                <p class="mb-1">Customer: {{ booking.customer.username }}</p>
+                                <p class="mb-1">Date: {{ booking.booking_date|date:"M d, Y H:i" }}</p>
+                                <span class="badge bg-{% if booking.status == 'pending' %}warning{% elif booking.status == 'accepted' %}success{% elif booking.status == 'completed' %}info{% else %}secondary{% endif %}">
+                                    {{ booking.get_status_display }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                        <a href="{% url 'manage_bookings' %}" class="btn btn-outline-primary">Manage All Bookings</a>
+                    {% else %}
+                        <p class="text-muted">No bookings yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

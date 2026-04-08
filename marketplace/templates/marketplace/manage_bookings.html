@@ -1,0 +1,62 @@
+{% extends 'marketplace/base.html' %}
+
+{% block title %}Manage Bookings - Neighbourhood Service Marketplace{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h2>Manage Bookings</h2>
+
+    {% if bookings %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Service</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Notes</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in bookings %}
+                        <tr>
+                            <td>{{ booking.service.title }}</td>
+                            <td>{{ booking.customer.get_full_name|default:booking.customer.username }}</td>
+                            <td>{{ booking.booking_date|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <span class="badge bg-{% if booking.status == 'pending' %}warning{% elif booking.status == 'accepted' %}success{% elif booking.status == 'completed' %}info{% else %}secondary{% endif %}">
+                                    {{ booking.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ booking.notes|truncatechars:50 }}</td>
+                            <td>
+                                {% if booking.status == 'pending' %}
+                                    <form method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="booking_id" value="{{ booking.id }}">
+                                        <button type="submit" name="action" value="accept" class="btn btn-sm btn-success">Accept</button>
+                                        <button type="submit" name="action" value="reject" class="btn btn-sm btn-danger">Reject</button>
+                                    </form>
+                                {% elif booking.status == 'accepted' %}
+                                    <form method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="booking_id" value="{{ booking.id }}">
+                                        <button type="submit" name="action" value="complete" class="btn btn-sm btn-primary">Mark Complete</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <h4>No bookings yet</h4>
+            <p>When customers book your services, they will appear here.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

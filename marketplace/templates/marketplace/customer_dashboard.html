@@ -1,0 +1,66 @@
+{% extends 'marketplace/base.html' %}
+
+{% block title %}Dashboard - Neighbourhood Service Marketplace{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-8">
+            <h2>Welcome back, {{ user.first_name }}!</h2>
+            <p class="text-muted">Location: {{ user_profile.location }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'profile' %}" class="btn btn-outline-primary">Edit Profile</a>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Your Bookings</h5>
+                </div>
+                <div class="card-body">
+                    {% if bookings %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Service</th>
+                                        <th>Provider</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for booking in bookings %}
+                                        <tr>
+                                            <td>{{ booking.service.title }}</td>
+                                            <td>{{ booking.service.provider.username }}</td>
+                                            <td>
+                                                <span class="badge bg-{% if booking.status == 'pending' %}warning{% elif booking.status == 'accepted' %}success{% elif booking.status == 'completed' %}info{% else %}secondary{% endif %}">
+                                                    {{ booking.get_status_display }}
+                                                </span>
+                                            </td>
+                                            <td>{{ booking.booking_date|date:"M d, Y H:i" }}</td>
+                                            <td>
+                                                {% if booking.status == 'completed' and not booking.review %}
+                                                    <a href="{% url 'submit_review' booking.id %}" class="btn btn-sm btn-primary">Review</a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">You haven't made any bookings yet.</p>
+                        <a href="{% url 'service_list' %}" class="btn btn-primary">Find Services</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

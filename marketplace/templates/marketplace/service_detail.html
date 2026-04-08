@@ -1,0 +1,106 @@
+{% extends 'marketplace/base.html' %}
+
+{% block title %}{{ service.title }} - Neighbourhood Service Marketplace{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>{{ service.title }}</h3>
+                </div>
+                <div class="card-body">
+                    <p class="lead">{{ service.description }}</p>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Category:</strong> {{ service.get_category_display }}</p>
+                            <p><strong>Price:</strong> ${{ service.price }}</p>
+                            <p><strong>Location:</strong> {{ service.location }}</p>
+                            <p><strong>Experience:</strong> {{ service.experience_years }} years</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Provider:</strong> {{ service.provider.get_full_name|default:service.provider.username }}</p>
+                            {% if service.provider.userprofile.phone_number %}
+                                <p><strong>Phone:</strong> {{ service.provider.userprofile.phone_number }}</p>
+                            {% endif %}
+                            {% if average_rating > 0 %}
+                                <p><strong>Rating:</strong>
+                                    {% for i in "12345"|make_list %}
+                                        {% if forloop.counter <= average_rating %}
+                                            <span class="rating">★</span>
+                                        {% else %}
+                                            <span class="text-muted">☆</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                    ({{ average_rating|floatformat:1 }})
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if can_book %}
+                        <a href="{% url 'book_service' service.id %}" class="btn btn-success btn-lg">Book This Service</a>
+                    {% elif user.is_authenticated and user == service.provider %}
+                        <div class="alert alert-info">This is your own service.</div>
+                    {% elif user.is_authenticated %}
+                        <div class="alert alert-warning">You already have a pending or accepted booking for this service.</div>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-success btn-lg">Login to Book</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Reviews Section -->
+            {% if reviews %}
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5>Reviews</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for review in reviews %}
+                            <div class="mb-3 pb-3 border-bottom">
+                                <div class="d-flex justify-content-between">
+                                    <strong>{{ review.customer.get_full_name|default:review.customer.username }}</strong>
+                                    <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                                </div>
+                                <div class="mb-2">
+                                    {% for i in "12345"|make_list %}
+                                        {% if forloop.counter <= review.rating %}
+                                            <span class="rating">★</span>
+                                        {% else %}
+                                            <span class="text-muted">☆</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% if review.comment %}
+                                    <p>{{ review.comment }}</p>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>About the Provider</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>{{ service.provider.get_full_name|default:service.provider.username }}</strong></p>
+                    {% if service.provider.userprofile.bio %}
+                        <p>{{ service.provider.userprofile.bio }}</p>
+                    {% endif %}
+                    <p><strong>Location:</strong> {{ service.provider.userprofile.location }}</p>
+                    {% if service.provider.userprofile.phone_number %}
+                        <p><strong>Phone:</strong> {{ service.provider.userprofile.phone_number }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends 'marketplace/base.html' %}
+
+{% block title %}Book Service - Neighbourhood Service Marketplace{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Book Service: {{ service.title }}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <strong>Service Details:</strong><br>
+                        Provider: {{ service.provider.username }}<br>
+                        Price: ${{ service.price }}<br>
+                        Location: {{ service.location }}
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="{{ form.booking_date.id_for_label }}" class="form-label">Preferred Date & Time</label>
+                            {{ form.booking_date }}
+                            {% if form.booking_date.errors %}
+                                <div class="text-danger">{{ form.booking_date.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">Additional Notes (Optional)</label>
+                            {{ form.notes }}
+                        </div>
+                        <button type="submit" class="btn btn-success">Submit Booking Request</button>
+                        <a href="{% url 'service_detail' service.id %}" class="btn btn-secondary ms-2">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

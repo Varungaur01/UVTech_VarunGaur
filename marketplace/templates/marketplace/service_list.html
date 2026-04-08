@@ -1,0 +1,77 @@
+{% extends 'marketplace/base.html' %}
+
+{% block title %}Find Services - Neighbourhood Service Marketplace{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h2>Find Services</h2>
+
+    <!-- Search and Filter Form -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" name="q" class="form-control" placeholder="Search services..." value="{{ query }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        {% for category_value, category_name in categories %}
+                            <option value="{{ category_value }}" {% if category_value == selected_category %}selected{% endif %}>
+                                {{ category_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="location" class="form-control" placeholder="Location" value="{{ location }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Services Grid -->
+    <div class="row">
+        {% for service in services %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ service.title }}</h5>
+                        <p class="card-text">{{ service.description|truncatechars:100 }}</p>
+                        <p class="text-muted">
+                            <strong>Category:</strong> {{ service.get_category_display }}<br>
+                            <strong>Provider:</strong> {{ service.provider.username }}<br>
+                            <strong>Location:</strong> {{ service.location }}<br>
+                            <strong>Price:</strong> ${{ service.price }}<br>
+                            {% if service.average_rating > 0 %}
+                                <strong>Rating:</strong>
+                                {% for i in "12345"|make_list %}
+                                    {% if forloop.counter <= service.average_rating %}
+                                        <span class="rating">★</span>
+                                    {% else %}
+                                        <span class="text-muted">☆</span>
+                                    {% endif %}
+                                {% endfor %}
+                                ({{ service.average_rating|floatformat:1 }})
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="card-footer">
+                        <a href="{% url 'service_detail' service.id %}" class="btn btn-primary">View Details</a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    <h4>No services found</h4>
+                    <p>Try adjusting your search criteria or check back later.</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
