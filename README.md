@@ -1,9 +1,11 @@
 # UVTech_VarunGaur
-# UVTech_VarunGaur
+
 Team Name
+
 [UVTech]
 
 Project Name
+
 [Neighbourhood Service Marketplace]
 
 Selected Track
