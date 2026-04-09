@@ -1,9 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.contrib import messages
-from django.db.models import Q
-from .models import UserProfile, Service, Booking, Review, CATEGORY_CHOICES
+from django.db.models import Q, Count
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from .models import UserProfile, Service, Booking, Review, Conversation, Message, CATEGORY_CHOICES
 from .forms import UserRegistrationForm, UserProfileForm, ServiceForm, BookingForm, ReviewForm
 
 def home(request):
@@ -275,6 +278,11 @@ def book_service(request, pk):
             booking.customer = request.user
             booking.service = service
             booking.save()
+            Conversation.objects.get_or_create(
+                customer=request.user,
+                provider=service.provider,
+                booking=booking
+            )
             messages.success(request, 'Booking request sent successfully!')
             return redirect('dashboard')
     else:
@@ -301,6 +309,11 @@ def manage_bookings(request):
         if action == 'accept':
             booking.status = 'accepted'
             booking.save()
+            Conversation.objects.get_or_create(
+                customer=booking.customer,
+                provider=booking.service.provider,
+                booking=booking
+            )
             messages.success(request, 'Booking accepted!')
         elif action == 'reject':
             booking.status = 'cancelled'
@@ -395,3 +408,146 @@ def provider_profile(request, user_id):
         'review_count': reviews.count(),
     }
     return render(request, 'marketplace/provider_profile.html', context)
+
+# ============ MESSAGING VIEWS ============
+
+@login_required
+def messages_inbox(request):
+    """
+    Display all conversations for the logged-in user.
+    """
+    # Get conversations where user is sender or receiver
+    conversations = Conversation.objects.filter(
+        Q(customer=request.user) | Q(provider=request.user)
+    ).prefetch_related('messages', 'customer', 'provider').annotate(
+        unread_count=Count('messages', filter=Q(messages__is_read=False) & ~Q(messages__sender=request.user))
+    ).order_by('-updated_at')
+    
+    context = {
+        'conversations': conversations,
+    }
+    return render(request, 'marketplace/messages_inbox.html', context)
+
+@login_required
+def conversation_detail(request, conversation_id):
+    """
+    Display a specific conversation with message history.
+    """
+    conversation = get_object_or_404(
+        Conversation,
+        pk=conversation_id
+    )
+    
+    # Check if user is part of this conversation
+    if request.user != conversation.customer and request.user != conversation.provider:
+        messages.error(request, 'You do not have access to this conversation.')
+        return redirect('messages_inbox')
+    
+    # Mark messages as read
+    Message.objects.filter(conversation=conversation, is_read=False).exclude(sender=request.user).update(is_read=True)
+    
+    # Get all messages
+    messages_list = conversation.messages.all().order_by('created_at')
+    
+    # Determine the other user in conversation
+    if request.user == conversation.customer:
+        other_user = conversation.provider
+    else:
+        other_user = conversation.customer
+    
+    if request.method == 'POST':
+        content = request.POST.get('content', '').strip()
+        if content:
+            Message.objects.create(
+                conversation=conversation,
+                sender=request.user,
+                content=content,
+            )
+            conversation.save()  # Update the updated_at timestamp
+            return redirect('conversation_detail', conversation_id=conversation.id)
+    
+    context = {
+        'conversation': conversation,
+        'messages': messages_list,
+        'other_user': other_user,
+    }
+    return render(request, 'marketplace/conversation_detail.html', context)
+
+@login_required
+def start_conversation(request, user_id):
+    """
+    Start or redirect to existing conversation with a specific user.
+    """
+    other_user = get_object_or_404(User, pk=user_id)
+    
+    if request.user == other_user:
+        messages.error(request, 'You cannot message yourself.')
+        return redirect('dashboard')
+    
+    # Check if conversation already exists
+    conversation = Conversation.objects.filter(
+        (Q(customer=request.user) & Q(provider=other_user)) |
+        (Q(customer=other_user) & Q(provider=request.user))
+    ).first()
+    
+    if not conversation:
+        # Determine who is customer and who is provider based on roles
+        user_profile = get_object_or_404(UserProfile, user=request.user)
+        other_profile = get_object_or_404(UserProfile, user=other_user)
+        
+        if user_profile.role == 'customer' and other_profile.role == 'provider':
+            conversation = Conversation.objects.create(
+                customer=request.user,
+                provider=other_user
+            )
+        elif user_profile.role == 'provider' and other_profile.role == 'customer':
+            conversation = Conversation.objects.create(
+                customer=other_user,
+                provider=request.user
+            )
+        else:
+            messages.error(request, 'Invalid user types for messaging.')
+            return redirect('dashboard')
+    
+    return redirect('conversation_detail', conversation_id=conversation.id)
+
+@login_required
+def start_conversation_from_booking(request, booking_id):
+    """
+    Start a conversation from a booking.
+    """
+    booking = get_object_or_404(Booking, pk=booking_id)
+    
+    # Check if user is customer or provider of this booking
+    if request.user != booking.customer and request.user != booking.service.provider:
+        messages.error(request, 'You do not have access to this booking.')
+        return redirect('dashboard')
+    
+    # Determine the other user
+    if request.user == booking.customer:
+        other_user = booking.service.provider
+    else:
+        other_user = booking.customer
+    
+    # Check or create conversation
+    conversation = Conversation.objects.filter(
+        (Q(customer=request.user) & Q(provider=other_user)) |
+        (Q(customer=other_user) & Q(provider=request.user)),
+        booking=booking
+    ).first()
+    
+    if not conversation:
+        if request.user == booking.customer:
+            conversation = Conversation.objects.create(
+                customer=booking.customer,
+                provider=booking.service.provider,
+                booking=booking
+            )
+        else:
+            conversation = Conversation.objects.create(
+                customer=booking.customer,
+                provider=booking.service.provider,
+                booking=booking
+            )
+    
+    return redirect('conversation_detail', conversation_id=conversation.id)

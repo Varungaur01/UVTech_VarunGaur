@@ -150,6 +150,7 @@
 
             {% if user.is_authenticated %}
                 <a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a>
+                <a href="{% url 'messages_inbox' %}" class="nav-link">Messages</a>
 
                 {% if user.userprofile.role == 'provider' %}
                     <a href="{% url 'create_service' %}" class="nav-link">Add Service</a>

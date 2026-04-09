@@ -380,6 +380,9 @@
             {{ booking.get_status_display }}
           </div>
           <div class="booking-actions">
+            {% if booking.status == 'pending' or booking.status == 'accepted' %}
+              <a href="{% url 'start_conversation_from_booking' booking.id %}" class="btn-review">💬 Chat</a>
+            {% endif %}
             {% if booking.status == 'completed' and not booking.review %}
               <a href="{% url 'submit_review' booking.id %}" class="btn-review">⭐ Review</a>
             {% endif %}

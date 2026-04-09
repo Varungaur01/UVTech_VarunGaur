@@ -399,7 +399,9 @@
                 <button type="submit" name="action" value="accept" class="btn-action btn-accept">Accept</button>
                 <button type="submit" name="action" value="reject" class="btn-action btn-reject">Reject</button>
               </form>
+              <a href="{% url 'start_conversation_from_booking' booking.id %}" class="btn-action btn-complete" style="background: #e8a090; color: #fff;">Chat</a>
             {% elif booking.status == 'accepted' %}
+              <a href="{% url 'start_conversation_from_booking' booking.id %}" class="btn-action btn-complete" style="background: #e8a090; color: #fff;">Chat</a>
               <form method="post" class="d-inline">
                 {% csrf_token %}
                 <input type="hidden" name="booking_id" value="{{ booking.id }}">

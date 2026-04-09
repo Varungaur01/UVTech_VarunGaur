@@ -1,0 +1,284 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}Messages - Neighbourhood Service Marketplace{% endblock %}
+
+{% block content %}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  :root {
+    --mauve:        #b07f95;
+    --mauve-dark:   #8f637a;
+    --mauve-light:  #e8d5df;
+    --peach:        #e8a090;
+    --peach-light:  #fae8e4;
+    --butter:       #f5deaf;
+    --butter-light: #fdf5e8;
+    --ivory:        #f0f0c8;
+    --ivory-light:  #f8f8ec;
+    --mist:         #adc8cc;
+    --mist-dark:    #7aa6ab;
+    --mist-light:   #deeef0;
+    --ink:          #3b2a32;
+    --ink-mid:      #6b5560;
+    --ink-muted:    #9a8490;
+    --surface:      #fdf8f5;
+    --surface-2:    #f9f2ee;
+    --border:       #e8dcd8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
+    background: var(--surface);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+
+  .header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+  }
+
+  .back-button {
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(8px);
+    color: var(--ink);
+    padding: 12px 20px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    transition: all 0.22s ease;
+  }
+
+  .back-button:hover {
+    background: var(--butter-light);
+    text-decoration: none;
+  }
+
+  .messages-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .conversation-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .conversation-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(176,127,149,0.12);
+    border-color: var(--mauve-light);
+  }
+
+  .conversation-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--mauve-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: var(--mauve);
+    flex-shrink: 0;
+    font-size: 1.5rem;
+    overflow: hidden;
+  }
+
+  .conversation-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .conversation-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .conversation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .conversation-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  .conversation-time {
+    font-size: 0.85rem;
+    color: var(--ink-mid);
+  }
+
+  .conversation-preview {
+    font-size: 0.9rem;
+    color: var(--ink-mid);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .conversation-unread {
+    background: #dc2626;
+    color: #fff;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 80px 20px;
+  }
+
+  .empty-state h2 {
+    font-size: 1.5rem;
+    margin-bottom: 12px;
+    color: var(--ink-mid);
+  }
+
+  .empty-state p {
+    color: var(--ink-muted);
+    margin-bottom: 24px;
+  }
+
+  .btn-primary {
+    background: var(--mauve);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-block;
+    transition: all 0.22s ease;
+  }
+
+  .btn-primary:hover {
+    background: var(--mauve-dark);
+    text-decoration: none;
+  }
+
+  @media (max-width: 768px) {
+    .container { padding: 20px 16px; }
+    .header { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .header h1 { font-size: 1.75rem; }
+    .conversation-avatar { width: 50px; height: 50px; }
+  }
+</style>
+
+<div class="container">
+  <div class="header">
+    <h1>💬 Messages</h1>
+    <a href="{% url 'dashboard' %}" class="back-button">← Back to Dashboard</a>
+  </div>
+
+  <div class="messages-container">
+    {% if conversations %}
+      {% for conversation in conversations %}
+        <a href="{% url 'conversation_detail' conversation.id %}" class="conversation-card">
+          <div class="conversation-avatar">
+            {% if conversation.customer == user %}
+              {% if conversation.provider.userprofile.profile_photo %}
+                <img src="{{ conversation.provider.userprofile.profile_photo.url }}" alt="{{ conversation.provider.first_name }}">
+              {% else %}
+                {{ conversation.provider.first_name|first|upper }}
+              {% endif %}
+            {% else %}
+              {% if conversation.customer.userprofile.profile_photo %}
+                <img src="{{ conversation.customer.userprofile.profile_photo.url }}" alt="{{ conversation.customer.first_name }}">
+              {% else %}
+                {{ conversation.customer.first_name|first|upper }}
+              {% endif %}
+            {% endif %}
+          </div>
+          
+          <div class="conversation-content">
+            <div class="conversation-header">
+              <span class="conversation-name">
+                {% if conversation.customer == user %}
+                  {{ conversation.provider.get_full_name|default:conversation.provider.username }}
+                {% else %}
+                  {{ conversation.customer.get_full_name|default:conversation.customer.username }}
+                {% endif %}
+              </span>
+              <span class="conversation-time">
+                {% if conversation.updated_at|date:"Y-m-d" == "now"|date:"Y-m-d" %}
+                  {{ conversation.updated_at|date:"H:i" }}
+                {% else %}
+                  {{ conversation.updated_at|date:"M d" }}
+                {% endif %}
+              </span>
+            </div>
+            {% with last_msg=conversation.last_message %}
+              {% if last_msg %}
+                <p class="conversation-preview">
+                  {% if last_msg.sender == user %}<strong>You:</strong> {% endif %}
+                  {{ last_msg.content|truncatewords:10 }}
+                </p>
+              {% else %}
+                <p class="conversation-preview"><em>No messages yet</em></p>
+              {% endif %}
+            {% endwith %}
+          </div>
+
+          {% if conversation.unread_count > 0 %}
+            <div class="conversation-unread">{{ conversation.unread_count }}</div>
+          {% endif %}
+        </a>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">
+        <h2>No conversations yet</h2>
+        <p>Start messaging with service providers or customers about their bookings</p>
+        <a href="{% url 'dashboard' %}" class="btn-primary">Go to Dashboard</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

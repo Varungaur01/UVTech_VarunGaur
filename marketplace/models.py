@@ -93,3 +93,39 @@ class Review(models.Model):
 
     def __str__(self):
         return f"Review by {self.customer.username} - {self.rating} stars"
+
+class Conversation(models.Model):
+    """
+    Represents a conversation between a customer and a service provider.
+    """
+    customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='conversations_as_customer')
+    provider = models.ForeignKey(User, on_delete=models.CASCADE, related_name='conversations_as_provider')
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='conversations', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('customer', 'provider', 'booking')
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"Conversation between {self.customer.username} and {self.provider.username}"
+
+    def last_message(self):
+        return self.messages.first()
+
+class Message(models.Model):
+    """
+    Represents an individual message in a conversation between customer and provider.
+    """
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    content = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Message from {self.sender.username} at {self.created_at}"

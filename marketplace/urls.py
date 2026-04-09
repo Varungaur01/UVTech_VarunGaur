@@ -17,4 +17,9 @@ urlpatterns = [
     path('services/<int:pk>/book/', views.book_service, name='book_service'),
     path('bookings/manage/', views.manage_bookings, name='manage_bookings'),
     path('reviews/<int:booking_id>/submit/', views.submit_review, name='submit_review'),
+    # Messaging URLs
+    path('messages/', views.messages_inbox, name='messages_inbox'),
+    path('messages/<int:conversation_id>/', views.conversation_detail, name='conversation_detail'),
+    path('messages/start/<int:user_id>/', views.start_conversation, name='start_conversation'),
+    path('messages/booking/<int:booking_id>/', views.start_conversation_from_booking, name='start_conversation_from_booking'),
 ]

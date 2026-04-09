@@ -249,6 +249,128 @@
     margin-bottom: 24px;
   }
 
+  /* ── MESSAGE SECTION ── */
+  .message-link {
+    display: inline-block;
+    background: var(--peach);
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    text-decoration: none;
+  }
+
+  .message-link:hover {
+    background: var(--peach-light);
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .notification-badge {
+    background: #dc2626;
+    color: #fff;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .booking-customer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .customer-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--mauve-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: var(--mauve);
+    overflow: hidden;
+  }
+
+  .customer-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .customer-info h5 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .customer-info p {
+    font-size: 0.85rem;
+    color: var(--ink-mid);
+    margin: 0;
+  }
+
+  .booking-actions-enhanced {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .btn-message {
+    background: var(--peach);
+    color: #fff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .btn-message:hover {
+    background: var(--peach-light);
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .btn-accept {
+    background: #10b981;
+  }
+
+  .btn-accept:hover {
+    background: #059669;
+  }
+
+  .btn-complete {
+    background: #3b82f6;
+  }
+
+  .btn-complete:hover {
+    background: #2563eb;
+  }
+
+  .btn-reject {
+    background: #ef4444;
+  }
+
+  .btn-reject:hover {
+    background: #dc2626;
+  }
+
   /* ── RESPONSIVE ── */
   @media (max-width: 768px) {
     .dashboard { padding: 20px 16px; }
@@ -257,6 +379,11 @@
     .header-actions { width: 100%; justify-content: space-between; }
     .sections-grid { grid-template-columns: 1fr; }
     .section-card { padding: 24px 20px; }
+    .booking-actions-enhanced { flex-direction: column; }
+    .btn-message, .btn-accept, .btn-complete, .btn-reject {
+      width: 100%;
+      text-align: center;
+    }
   }
 </style>
 
@@ -326,26 +453,88 @@
 
     <!-- BOOKINGS -->
     <div class="section-card">
-      <h2 class="section-title">📅 Recent Bookings</h2>
+      <h2 class="section-title">📅 Recent Bookings & Customers</h2>
       {% if bookings %}
-        {% for booking in bookings|slice:":5" %}
+        {% for booking in bookings|slice:":8" %}
           <div class="booking-item">
-            <div class="booking-info">
-              <h4>{{ booking.service.title }}</h4>
-              <p>{{ booking.customer.first_name }} • {{ booking.booking_date|date:"M d, Y H:i" }}</p>
+            <!-- Customer Info -->
+            <div class="booking-customer">
+              <div class="customer-avatar">
+                {% if booking.customer.userprofile.profile_photo %}
+                  <img src="{{ booking.customer.userprofile.profile_photo.url }}" alt="{{ booking.customer.first_name }}">
+                {% else %}
+                  {{ booking.customer.first_name|first|upper }}
+                {% endif %}
+              </div>
+              <div class="customer-info">
+                <h5>{{ booking.customer.get_full_name|default:booking.customer.username }}</h5>
+                <p>📍 {{ booking.customer.userprofile.location|default:"Location not set" }}</p>
+                <p>📱 {{ booking.customer.userprofile.phone_number|default:"Phone not provided" }}</p>
+              </div>
             </div>
-            <div class="booking-status status-{{ booking.status }}">
-              {{ booking.get_status_display }}
+
+            <!-- Booking Details -->
+            <div class="booking-info" style="margin-bottom: 12px;">
+              <p><strong>Service:</strong> {{ booking.service.title }}</p>
+              <p><strong>Booking Date:</strong> {{ booking.booking_date|date:"M d, Y H:i" }}</p>
+              <p><strong>Requested:</strong> {{ booking.created_at|date:"M d, Y" }}</p>
+              {% if booking.notes %}
+                <p><strong>Notes:</strong> {{ booking.notes }}</p>
+              {% endif %}
+            </div>
+
+            <!-- Status & Actions -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+              <div class="booking-status status-{{ booking.status }}">
+                {{ booking.get_status_display }}
+              </div>
+              <div class="booking-actions-enhanced">
+                <a href="{% url 'start_conversation_from_booking' booking.id %}" class="btn-message">
+                  💬 Message
+                </a>
+                {% if booking.status == 'pending' %}
+                  <form method="POST" action="{% url 'manage_bookings' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="booking_id" value="{{ booking.id }}">
+                    <input type="hidden" name="action" value="accept">
+                    <button type="submit" class="btn-accept">✓ Accept</button>
+                  </form>
+                  <form method="POST" action="{% url 'manage_bookings' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="booking_id" value="{{ booking.id }}">
+                    <input type="hidden" name="action" value="reject">
+                    <button type="submit" class="btn-reject">✕ Reject</button>
+                  </form>
+                {% elif booking.status == 'accepted' %}
+                  <form method="POST" action="{% url 'manage_bookings' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="booking_id" value="{{ booking.id }}">
+                    <input type="hidden" name="action" value="complete">
+                    <button type="submit" class="btn-complete">✓ Complete</button>
+                  </form>
+                {% endif %}
+              </div>
             </div>
           </div>
         {% endfor %}
-        <a href="{% url 'manage_bookings' %}" class="btn-secondary" style="margin-top: 16px; display: inline-block;">Manage All Bookings</a>
+        <a href="{% url 'manage_bookings' %}" class="btn-secondary" style="margin-top: 16px; display: inline-block;">👁️ View All Bookings</a>
       {% else %}
         <div class="empty-state">
           <h3>No bookings yet</h3>
           <p>Your services will appear here once customers book them</p>
         </div>
       {% endif %}
+    </div>
+  </div>
+
+  <!-- MESSAGING SECTION -->
+  <div style="margin-top: 48px;">
+    <div class="section-card">
+      <h2 class="section-title">💬 Messages</h2>
+      <div style="text-align: center; padding: 40px 20px;">
+        <p style="color: var(--ink-mid); margin-bottom: 16px;">Keep track of all conversations with your customers</p>
+        <a href="{% url 'messages_inbox' %}" class="btn-primary">View Messages</a>
+      </div>
     </div>
   </div>
 </div>
