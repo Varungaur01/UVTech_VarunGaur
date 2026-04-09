@@ -1,0 +1,295 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}Payment Successful - Neighbourhood Service Marketplace{% endblock %}
+
+{% block content %}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  :root {
+    --mauve:        #b07f95;
+    --mauve-dark:   #8f637a;
+    --mauve-light:  #e8d5df;
+    --peach:        #e8a090;
+    --peach-light:  #fae8e4;
+    --butter:       #f5deaf;
+    --butter-light: #fdf5e8;
+    --ivory:        #f0f0c8;
+    --ivory-light:  #f8f8ec;
+    --mist:         #adc8cc;
+    --mist-dark:    #7aa6ab;
+    --mist-light:   #deeef0;
+    --ink:          #3b2a32;
+    --ink-mid:      #6b5560;
+    --ink-muted:    #9a8490;
+    --surface:      #fdf8f5;
+    --surface-2:    #f9f2ee;
+    --border:       #e8dcd8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
+    background: var(--surface);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .success-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    text-align: center;
+  }
+
+  .success-icon {
+    width: 80px;
+    height: 80px;
+    background: var(--mist-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    margin: 0 auto 24px;
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    color: var(--mist-dark);
+  }
+
+  .success-message {
+    font-size: 1.1rem;
+    color: var(--ink-mid);
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+
+  .payment-summary {
+    background: var(--surface-2);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 32px;
+    text-align: left;
+  }
+
+  .summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .summary-item:last-child {
+    border-bottom: none;
+  }
+
+  .summary-label {
+    font-weight: 600;
+    color: var(--ink-mid);
+  }
+
+  .summary-value {
+    font-weight: 700;
+  }
+
+  .total-row {
+    border-top: 2px solid var(--border);
+    padding-top: 12px !important;
+    font-size: 1.2rem;
+  }
+
+  .total-row .summary-value {
+    color: var(--mist-dark);
+  }
+
+  .info-box {
+    background: var(--ivory-light);
+    border-left: 4px solid var(--ivory);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 32px;
+    text-align: left;
+  }
+
+  .info-box strong {
+    color: var(--ink);
+  }
+
+  .info-box p {
+    font-size: 0.95rem;
+    color: var(--ink-mid);
+    margin: 8px 0;
+  }
+
+  .btn-container {
+    display: flex;
+    gap: 12px;
+    flex-direction: column;
+  }
+
+  .btn-primary, .btn-secondary {
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    text-decoration: none;
+    text-align: center;
+    font-size: 1rem;
+  }
+
+  .btn-primary {
+    background: var(--mist);
+    color: #fff;
+  }
+
+  .btn-primary:hover {
+    background: var(--mist-dark);
+    transform: translateY(-2px);
+  }
+
+  .btn-secondary {
+    background: rgba(255,255,255,0.8);
+    color: var(--ink);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover {
+    background: var(--butter-light);
+  }
+
+  .order-id {
+    background: var(--mauve-light);
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    font-size: 0.9rem;
+  }
+
+  .order-id-label {
+    color: var(--ink-mid);
+    font-size: 0.85rem;
+  }
+
+  .order-id-value {
+    font-weight: 700;
+    color: var(--mauve-dark);
+    word-break: break-all;
+  }
+
+  .next-steps {
+    text-align: left;
+    background: var(--peach-light);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+
+  .next-steps h3 {
+    font-size: 1rem;
+    margin-bottom: 12px;
+    color: var(--peach);
+  }
+
+  .next-steps ol {
+    margin-left: 20px;
+    font-size: 0.95rem;
+    color: var(--ink-mid);
+  }
+
+  .next-steps li {
+    margin-bottom: 8px;
+  }
+</style>
+
+<div class="container">
+  <div class="success-card">
+    <div class="success-icon">✓</div>
+    <h1>Payment Successful!</h1>
+    <p class="success-message">
+      Your payment has been processed successfully.<br>
+      The service provider has been notified.
+    </p>
+
+    {% if payment %}
+      <div class="order-id">
+        <div class="order-id-label">Order ID</div>
+        <div class="order-id-value">{{ payment.razorpay_order_id }}</div>
+      </div>
+
+      <div class="payment-summary">
+        <div class="summary-item">
+          <span class="summary-label">Service</span>
+          <span class="summary-value">{{ booking.service.title }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Provider</span>
+          <span class="summary-value">{{ booking.service.provider.get_full_name|default:booking.service.provider.username }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Payment Date</span>
+          <span class="summary-value">{{ payment.created_at|date:"M d, Y H:i" }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Booking Date</span>
+          <span class="summary-value">{{ booking.booking_date|date:"M d, Y" }}</span>
+        </div>
+        <div class="summary-item total-row">
+          <span class="summary-label">Amount Paid</span>
+          <span class="summary-value">₹{{ payment.amount }}</span>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="info-box">
+      <strong>💡 What happens next?</strong>
+      <p>✓ You can track your service status in your bookings</p>
+      <p>✓ You can message the service provider anytime</p>
+      <p>✓ Remember to leave a review after service completion</p>
+    </div>
+
+    <div class="next-steps">
+      <h3>📋 Next Steps:</h3>
+      <ol>
+        <li>Confirm the service appointment with your provider</li>
+        <li>Track the service status in your bookings</li>
+        <li>Communicate with the provider via messages</li>
+        <li>Leave feedback after service completion</li>
+      </ol>
+    </div>
+
+    <div class="btn-container">
+      <a href="{% url 'manage_bookings' %}" class="btn-primary">View My Bookings</a>
+      <a href="{% url 'messages_inbox' %}" class="btn-secondary">View Messages</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -6,8 +6,15 @@ from django.contrib import messages
 from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from .models import UserProfile, Service, Booking, Review, Conversation, Message, CATEGORY_CHOICES
+from django.conf import settings
+from .models import UserProfile, Service, Booking, Review, Conversation, Message, CATEGORY_CHOICES, Payment, ProviderBalance, PaymentOrder, CommissionTransaction
 from .forms import UserRegistrationForm, UserProfileForm, ServiceForm, BookingForm, ReviewForm
+import razorpay
+import json
+from io import BytesIO
+import qrcode
+from django.core.files.base import ContentFile
+from datetime import datetime, timedelta
 
 def home(request):
     """
@@ -551,3 +558,255 @@ def start_conversation_from_booking(request, booking_id):
             )
     
     return redirect('conversation_detail', conversation_id=conversation.id)
+
+
+# =============== PAYMENT VIEWS ===============
+
+def generate_qr_code(data, size=10, border=4):
+    """
+    Generate a QR code image from data
+    """
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=size,
+        border=border,
+    )
+    qr.add_data(data)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    return img
+
+
+def save_qr_code(qr_image, filename):
+    """
+    Save QR code image to media folder
+    """
+    img_io = BytesIO()
+    qr_image.save(img_io, format='PNG')
+    img_io.seek(0)
+    return ContentFile(img_io.read(), name=filename)
+
+
+def generate_payment_order_id():
+    """Generate a unique payment order ID"""
+    from django.utils import timezone
+    timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
+    return f"ORDER_{timestamp}"
+
+
+@login_required
+def initiate_payment(request, booking_id):
+    """
+    Initiate payment for a booking - Creates Razorpay order and generates QR code
+    """
+    booking = get_object_or_404(Booking, pk=booking_id)
+    
+    # Only customer can pay
+    if request.user != booking.customer:
+        messages.error(request, 'You are not authorized to pay for this booking.')
+        return redirect('manage_bookings')
+    
+    # Check if already paid
+    if booking.is_paid:
+        messages.warning(request, 'This booking is already paid.')
+        return redirect('manage_bookings')
+    
+    try:
+        # Initialize Razorpay client
+        client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+        
+        # Calculate amount in paise (1 INR = 100 paise)
+        amount_in_paise = int(booking.service.price * 100)
+        
+        # Create order in Razorpay
+        order_data = {
+            'amount': amount_in_paise,
+            'currency': 'INR',
+            'receipt': f'booking_{booking.id}',
+            'payment_capture': 1  # Auto capture
+        }
+        
+        razorpay_order = client.order.create(data=order_data)
+        order_id = razorpay_order['id']
+        
+        # Generate QR code data
+        qr_data = f"upi://pay?pa=company@upi&pn=UVTech&am={booking.service.price}&tn=Service%20Payment&tr={order_id}"
+        qr_image = generate_qr_code(qr_data)
+        
+        # Save QR code
+        qr_filename = f'qr_code_{order_id}.png'
+        qr_file = save_qr_code(qr_image, qr_filename)
+        
+        # Create payment order with QR code
+        payment_order = PaymentOrder.objects.create(
+            booking=booking,
+            order_id=order_id,
+            amount=booking.service.price,
+            qr_code=qr_file,
+            short_url=razorpay_order.get('short_url', ''),
+            expires_at=datetime.now() + timedelta(minutes=settings.PAYMENT_EXPIRY_MINUTES)
+        )
+        
+        context = {
+            'booking': booking,
+            'payment_order': payment_order,
+            'razorpay_key': settings.RAZORPAY_KEY_ID,
+            'razorpay_order_id': order_id,
+            'amount': booking.service.price,
+        }
+        
+        return render(request, 'marketplace/payment_page.html', context)
+    
+    except Exception as e:
+        messages.error(request, f'Error creating payment order: {str(e)}')
+        return redirect('manage_bookings')
+
+
+@login_required
+@require_POST
+def verify_payment(request, booking_id):
+    """
+    Verify Razorpay payment and update booking/commission status
+    """
+    booking = get_object_or_404(Booking, pk=booking_id)
+    
+    if request.user != booking.customer:
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized'})
+    
+    try:
+        # Get payment details from request
+        razorpay_payment_id = request.POST.get('razorpay_payment_id')
+        razorpay_order_id = request.POST.get('razorpay_order_id')
+        razorpay_signature = request.POST.get('razorpay_signature')
+        
+        # Verify signature
+        client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+        
+        params_dict = {
+            'razorpay_order_id': razorpay_order_id,
+            'razorpay_payment_id': razorpay_payment_id,
+            'razorpay_signature': razorpay_signature
+        }
+        
+        try:
+            client.utility.verify_payment_signature(params_dict)
+            signature_verified = True
+        except:
+            signature_verified = False
+        
+        if not signature_verified:
+            return JsonResponse({'status': 'error', 'message': 'Payment signature verification failed'})
+        
+        # Calculate commission (20%)
+        service_amount = booking.service.price
+        company_commission = (service_amount * settings.COMPANY_COMMISSION_PERCENTAGE) / 100
+        provider_amount = service_amount - company_commission
+        
+        # Create payment record
+        payment = Payment.objects.create(
+            booking=booking,
+            customer=request.user,
+            service_provider=booking.service.provider,
+            amount=service_amount,
+            company_commission=company_commission,
+            provider_amount=provider_amount,
+            status='completed',
+            razorpay_order_id=razorpay_order_id,
+            razorpay_payment_id=razorpay_payment_id,
+            razorpay_signature=razorpay_signature,
+            payment_method='upi'
+        )
+        
+        # Update booking
+        booking.is_paid = True
+        booking.payment = payment
+        booking.save()
+        
+        # Update provider's balance
+        try:
+            provider_balance = ProviderBalance.objects.get(provider=booking.service.provider)
+        except:
+            provider_balance = ProviderBalance.objects.create(provider=booking.service.provider)
+        
+        provider_balance.total_earnings += provider_amount
+        provider_balance.total_commission_owed += company_commission
+        provider_balance.update_balance()
+        
+        # Create commission transaction record
+        CommissionTransaction.objects.create(
+            provider=booking.service.provider,
+            payment=payment,
+            transaction_type='service_payment',
+            amount=service_amount,
+            description=f'Payment for {booking.service.title}'
+        )
+        
+        messages.success(request, 'Payment completed successfully!')
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Payment verified successfully',
+            'redirect_url': f'/bookings/manage/'
+        })
+    
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': f'Error: {str(e)}'})
+
+
+@login_required
+def payment_success(request, booking_id):
+    """
+    Payment success page
+    """
+    booking = get_object_or_404(Booking, pk=booking_id)
+    
+    if request.user != booking.customer:
+        messages.error(request, 'Unauthorized access')
+        return redirect('manage_bookings')
+    
+    context = {
+        'booking': booking,
+        'payment': booking.payment,
+    }
+    
+    return render(request, 'marketplace/payment_success.html', context)
+
+
+@login_required
+def provider_earnings(request):
+    """
+    Show provider's earnings and commission status
+    """
+    if request.user.userprofile.role != 'provider':
+        messages.error(request, 'Only service providers can view earnings.')
+        return redirect('dashboard')
+    
+    try:
+        provider_balance = ProviderBalance.objects.get(provider=request.user)
+    except:
+        provider_balance = ProviderBalance.objects.create(provider=request.user)
+    
+    # Get all payments for this provider
+    payments = Payment.objects.filter(service_provider=request.user, status='completed').order_by('-created_at')
+    
+    # Get commission transactions
+    commission_transactions = CommissionTransaction.objects.filter(provider=request.user).order_by('-created_at')
+    
+    # Calculate statistics
+    total_services_completed = Booking.objects.filter(service__provider=request.user, status='completed', is_paid=True).count()
+    total_earnings = provider_balance.total_earnings
+    total_commission_owed = provider_balance.total_commission_owed
+    balance_status = 'In Balance' if provider_balance.current_balance >= 0 else 'In Debt'
+    
+    context = {
+        'provider_balance': provider_balance,
+        'payments': payments,
+        'commission_transactions': commission_transactions,
+        'total_services_completed': total_services_completed,
+        'total_earnings': total_earnings,
+        'total_commission_owed': total_commission_owed,
+        'balance_status': balance_status,
+    }
+    
+    return render(request, 'marketplace/provider_earnings.html', context)

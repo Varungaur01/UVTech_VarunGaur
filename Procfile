@@ -1,0 +1,1 @@
+web: gunicorn neighbourhood_marketplace.wsgi --log-file -

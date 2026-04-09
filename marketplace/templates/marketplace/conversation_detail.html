@@ -140,6 +140,11 @@
     object-fit: cover;
   }
 
+  .message-avatar:hover {
+    opacity: 0.8;
+    box-shadow: 0 0 8px rgba(176, 127, 149, 0.3);
+  }
+
   .message-content {
     flex: 1;
     background: #fff;
@@ -279,13 +284,23 @@
       {% if messages %}
         {% for message in messages %}
           <div class="message {% if message.sender == user %}message-own{% endif %}">
-            <div class="message-avatar">
-              {% if message.sender.userprofile.profile_photo %}
-                <img src="{{ message.sender.userprofile.profile_photo.url }}" alt="{{ message.sender.first_name }}">
-              {% else %}
-                {{ message.sender.first_name|first|upper }}
-              {% endif %}
-            </div>
+            {% if message.sender == user %}
+              <div class="message-avatar">
+                {% if message.sender.userprofile.profile_photo %}
+                  <img src="{{ message.sender.userprofile.profile_photo.url }}" alt="{{ message.sender.first_name }}">
+                {% else %}
+                  {{ message.sender.first_name|first|upper }}
+                {% endif %}
+              </div>
+            {% else %}
+              <a href="{% url 'provider_profile' user_id=message.sender.id %}" class="message-avatar" style="text-decoration: none; cursor: pointer;">
+                {% if message.sender.userprofile.profile_photo %}
+                  <img src="{{ message.sender.userprofile.profile_photo.url }}" alt="{{ message.sender.first_name }}">
+                {% else %}
+                  {{ message.sender.first_name|first|upper }}
+                {% endif %}
+              </a>
+            {% endif %}
             <div class="message-content">
               <div class="message-sender">
                 {% if message.sender == user %}You{% else %}{{ message.sender.get_full_name|default:message.sender.username }}{% endif %}

@@ -22,4 +22,9 @@ urlpatterns = [
     path('messages/<int:conversation_id>/', views.conversation_detail, name='conversation_detail'),
     path('messages/start/<int:user_id>/', views.start_conversation, name='start_conversation'),
     path('messages/booking/<int:booking_id>/', views.start_conversation_from_booking, name='start_conversation_from_booking'),
+    # Payment URLs
+    path('payment/<int:booking_id>/initiate/', views.initiate_payment, name='initiate_payment'),
+    path('payment/<int:booking_id>/verify/', views.verify_payment, name='verify_payment'),
+    path('payment/<int:booking_id>/success/', views.payment_success, name='payment_success'),
+    path('earnings/', views.provider_earnings, name='provider_earnings'),
 ]

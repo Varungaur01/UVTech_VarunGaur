@@ -1,0 +1,385 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}Payment - {{ booking.service.title }} - Neighbourhood Service Marketplace{% endblock %}
+
+{% block content %}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+  :root {
+    --mauve:        #b07f95;
+    --mauve-dark:   #8f637a;
+    --mauve-light:  #e8d5df;
+    --peach:        #e8a090;
+    --peach-light:  #fae8e4;
+    --butter:       #f5deaf;
+    --butter-light: #fdf5e8;
+    --ivory:        #f0f0c8;
+    --ivory-light:  #f8f8ec;
+    --mist:         #adc8cc;
+    --mist-dark:    #7aa6ab;
+    --mist-light:   #deeef0;
+    --ink:          #3b2a32;
+    --ink-mid:      #6b5560;
+    --ink-muted:    #9a8490;
+    --surface:      #fdf8f5;
+    --surface-2:    #f9f2ee;
+    --border:       #e8dcd8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
+    background: var(--surface);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+  }
+
+  .back-button {
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(8px);
+    color: var(--ink);
+    padding: 10px 16px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    transition: all 0.22s ease;
+  }
+
+  .back-button:hover {
+    background: var(--butter-light);
+  }
+
+  .payment-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-top: 32px;
+  }
+
+  .payment-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+  }
+
+  .section-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+  }
+
+  .qr-section {
+    text-align: center;
+  }
+
+  .qr-code-box {
+    background: var(--surface-2);
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+  }
+
+  .qr-code-box img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .qr-instructions {
+    background: var(--butter-light);
+    border-left: 4px solid var(--butter);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+    font-size: 0.95rem;
+  }
+
+  .qr-instructions strong {
+    color: var(--mauve-dark);
+  }
+
+  .payment-details {
+    text-align: left;
+  }
+
+  .detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .detail-label {
+    font-weight: 600;
+    color: var(--ink-mid);
+  }
+
+  .detail-value {
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+
+  .amount-section {
+    background: var(--peach-light);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 24px 0;
+  }
+
+  .amount-breakdown {
+    font-size: 0.9rem;
+    margin: 12px 0 8px 0;
+    color: var(--ink-mid);
+  }
+
+  .amount-breakdown strong {
+    color: var(--ink);
+  }
+
+  .total-amount {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--peach);
+    margin-top: 12px;
+  }
+
+  .service-info {
+    background: var(--mist-light);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+
+  .service-name {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+  }
+
+  .service-provider {
+    font-size: 0.9rem;
+    color: var(--ink-mid);
+  }
+
+  .btn-container {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .btn-primary, .btn-secondary {
+    flex: 1;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    text-decoration: none;
+    text-align: center;
+    font-size: 0.95rem;
+  }
+
+  .btn-primary {
+    background: var(--mauve);
+    color: #fff;
+    margin-top: 24px;
+  }
+
+  .btn-primary:hover {
+    background: var(--mauve-dark);
+    transform: translateY(-2px);
+  }
+
+  .btn-secondary {
+    background: rgba(255,255,255,0.8);
+    color: var(--ink);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover {
+    background: var(--butter-light);
+  }
+
+  .payment-method {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 24px 0;
+  }
+
+  .method-option {
+    padding: 16px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.22s ease;
+  }
+
+  .method-option:hover {
+    border-color: var(--mauve);
+    background: var(--mauve-light);
+  }
+
+  .method-option input[type="radio"] {
+    display: none;
+  }
+
+  .method-option input[type="radio"]:checked + label {
+    color: var(--mauve);
+    font-weight: 700;
+  }
+
+  @media (max-width: 768px) {
+    .container { padding: 20px 16px; }
+    .payment-container { grid-template-columns: 1fr; gap: 24px; }
+    .btn-container { flex-direction: column; }
+  }
+</style>
+
+<div class="container">
+  <div class="header">
+    <h1>💳 Payment</h1>
+    <a href="{% url 'manage_bookings' %}" class="back-button">← Back</a>
+  </div>
+
+  <div class="payment-container">
+    <!-- Left Column - QR Code -->
+    <div class="payment-card">
+      <div class="qr-section">
+        <h2 class="section-title">Scan to Pay</h2>
+        
+        {% if payment_order.qr_code %}
+          <div class="qr-code-box">
+            <img src="{{ payment_order.qr_code.url }}" alt="Payment QR Code">
+          </div>
+        {% endif %}
+        
+        <div class="qr-instructions">
+          <strong>📱 How to pay:</strong>
+          <p style="margin-top: 8px;">
+            1. Open your UPI app (Google Pay, PhonePe, Paytm)<br>
+            2. Scan this QR code<br>
+            3. Verify the amount and complete payment<br>
+            4. Refresh this page after payment
+          </p>
+        </div>
+
+        <div style="background: var(--ivory-light); padding: 12px; border-radius: 8px; margin-top: 16px;">
+          <p style="font-size: 0.9rem; color: var(--ink-mid);">
+            <strong>Order ID:</strong> {{ payment_order.order_id }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column - Payment Details -->
+    <div class="payment-card">
+      <h2 class="section-title">Payment Details</h2>
+
+      <div class="service-info">
+        <div class="service-name">{{ booking.service.title }}</div>
+        <div class="service-provider">by {{ booking.service.provider.get_full_name|default:booking.service.provider.username }}</div>
+      </div>
+
+      <div class="detail-item">
+        <span class="detail-label">Booking Status</span>
+        <span class="detail-value" style="font-size: 1rem; color: var(--ink-mid);">{{ booking.get_status_display }}</span>
+      </div>
+
+      <div class="detail-item">
+        <span class="detail-label">Service Price</span>
+        <span class="detail-value">₹{{ booking.service.price }}</span>
+      </div>
+
+      <div style="background: var(--peach-light); border-radius: 12px; padding: 16px; margin: 24px 0;">
+        <div class="amount-breakdown">
+          <strong>Payment Breakdown:</strong>
+        </div>
+        <div class="amount-breakdown">
+          Service Amount: <strong>₹{{ booking.service.price }}</strong>
+        </div>
+        <div class="amount-breakdown">
+          Platform Commission (20%): <strong>₹{{ payment_commission|default:"Calculating..." }}</strong>
+        </div>
+        <div class="amount-breakdown" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.1);">
+          Total to Pay: <strong style="font-size: 1.3rem; color: var(--peach);">₹{{ booking.service.price }}</strong>
+        </div>
+      </div>
+
+      <div style="background: var(--ivory-light); border-radius: 8px; padding: 12px; font-size: 0.85rem; color: var(--ink-mid);">
+        <strong>ℹ️ Note:</strong> The company charges 20% commission on the service. The provider receives 80% of the payment.
+      </div>
+
+      <div class="btn-container">
+        <a href="{% url 'manage_bookings' %}" class="btn-secondary">Cancel</a>
+      </div>
+
+      <div style="margin-top: 24px; padding: 16px; background: var(--surface-2); border-radius: 12px; font-size: 0.9rem;">
+        <strong>⏱️ Order expires in {{ payment_order.expires_at|timeuntil }}</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Razorpay Script -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Optional: Auto-check payment status periodically
+  let checkCount = 0;
+  const checkPaymentStatus = function() {
+    checkCount++;
+    if (checkCount > 10) return; // Stop checking after 10 attempts
+    
+    // Check if payment has been completed
+    // This would require a separate endpoint to check payment status
+  };
+
+  // Note: In a real application, you would poll the server to check if payment was completed
+  // setInterval(checkPaymentStatus, 5000);
+});
+</script>
+
+{% endblock %}
