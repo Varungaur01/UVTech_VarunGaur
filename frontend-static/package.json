@@ -1,0 +1,14 @@
+{
+  "name": "fixbuddy-frontend",
+  "version": "1.0.0",
+  "description": "FixBuddy Neighbourhood Service Marketplace - Frontend",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "echo 'No build step required'",
+    "start": "npx serve ."
+  },
+  "keywords": ["marketplace", "services", "neighbourhood"],
+  "author": "UVTech Team",
+  "license": "MIT"
+}
