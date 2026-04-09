@@ -39,7 +39,7 @@ class UserProfileForm(forms.ModelForm):
     """
     class Meta:
         model = UserProfile
-        fields = ('location', 'phone_number', 'bio')
+        fields = ('location', 'phone_number', 'bio', 'profile_photo')
 
 class ServiceForm(forms.ModelForm):
     """
@@ -47,7 +47,7 @@ class ServiceForm(forms.ModelForm):
     """
     class Meta:
         model = Service
-        fields = ('title', 'description', 'category', 'price', 'location', 'experience_years')
+        fields = ('title', 'description', 'category', 'price', 'location', 'experience_years', 'image')
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4}),
         }

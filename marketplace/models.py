@@ -36,6 +36,7 @@ class UserProfile(models.Model):
     location = models.CharField(max_length=255, blank=True, help_text="City or area where the user is located")
     phone_number = models.CharField(max_length=15, blank=True)
     bio = models.TextField(blank=True, help_text="Short description for service providers")
+    profile_photo = models.ImageField(upload_to='profile_photos/', null=True, blank=True, help_text="Upload your profile photo")
 
     def __str__(self):
         return f"{self.user.username} - {self.role}"
@@ -51,6 +52,7 @@ class Service(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
     location = models.CharField(max_length=255, help_text="Service area or city")
     experience_years = models.PositiveIntegerField(default=0, help_text="Years of experience")
+    image = models.ImageField(upload_to='services/', null=True, blank=True, help_text="Upload a service image")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

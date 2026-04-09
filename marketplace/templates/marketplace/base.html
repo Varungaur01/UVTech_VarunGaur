@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Neighbourhood Service Marketplace{% endblock %}</title>
+    <meta name="description" content="Find trusted local services in your neighbourhood - from plumbing to tutoring. Connect with verified service providers and book instantly.">
+    <meta name="keywords" content="local services, neighbourhood, plumbing, electrician, tutoring, cleaning, service booking">
+    <meta name="author" content="FixBuddy">
+    <title>{% block title %}FixBuddy - Neighbourhood Service Marketplace{% endblock %}</title>
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
@@ -21,8 +24,23 @@
             --border:#e8dcd8;
         }
 
+        .dark {
+            --mauve:#c4a0b0;
+            --peach:#f0b5a0;
+            --ink:#f0f0f0;
+            --ink-muted:#b0b0b0;
+            --surface:#1a1a1a;
+            --border:#333;
+        }
+
         body {
             font-family: 'DM Sans', sans-serif;
+            background: var(--surface);
+            color: var(--ink);
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .dark body {
             background: var(--surface);
             color: var(--ink);
         }
@@ -36,6 +54,11 @@
             background: rgba(255,255,255,0.7);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border);
+            transition: background 0.3s ease, border-color 0.3s ease;
+        }
+
+        .dark .navbar-custom {
+            background: rgba(26,26,26,0.8);
         }
 
         .nav-link {
@@ -67,9 +90,40 @@
             border-top: 1px solid var(--border);
         }
 
+        .dark footer {
+            background: var(--surface);
+        }
+
         /* CONTAINER SPACING */
         main {
             min-height: 80vh;
+        }
+
+        /* TOASTS */
+        .toast-message {
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast-message.fade-out {
+            animation: fadeOut 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeOut {
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
         }
     </style>
 </head>
@@ -86,7 +140,7 @@
                  style="background:linear-gradient(135deg,var(--mauve),var(--peach));">
                 🏘️
             </div>
-            <span class="font-bold text-lg">NeighbourServe</span>
+            <span class="font-bold text-lg">FIXBUDDY</span>
         </a>
 
         <!-- Links -->
@@ -106,6 +160,16 @@
         <!-- Right Side -->
         <div class="flex items-center gap-3">
 
+            <!-- Dark Mode Toggle -->
+            <button id="theme-toggle" class="w-9 h-9 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors">
+                <svg id="sun-icon" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <svg id="moon-icon" class="w-5 h-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+            </button>
+
             {% if user.is_authenticated %}
                 <a href="{% url 'profile' %}" class="nav-link">Profile</a>
                 <a href="{% url 'logout' %}" class="nav-link">Logout</a>
@@ -121,6 +185,39 @@
 
 <!-- MAIN CONTENT -->
 <main>
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="toast-message bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm animate-slide-in-right" data-type="{{ message.tags }}">
+                    <div class="flex items-center gap-3">
+                        <div class="flex-shrink-0">
+                            {% if message.tags == 'success' %}
+                                <svg class="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            {% elif message.tags == 'error' %}
+                                <svg class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            {% else %}
+                                <svg class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            {% endif %}
+                        </div>
+                        <p class="text-sm font-medium text-gray-900">{{ message }}</p>
+                        <button class="toast-close ml-auto text-gray-400 hover:text-gray-600">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
     {% block content %}{% endblock %}
 </main>
 
@@ -140,6 +237,60 @@
 
     </div>
 </footer>
+
+<script>
+    // Dark Mode Toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const sunIcon = document.getElementById('sun-icon');
+    const moonIcon = document.getElementById('moon-icon');
+    const body = document.body;
+
+    // Check for saved theme preference or default to light mode
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    if (currentTheme === 'dark') {
+        body.classList.add('dark');
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+    }
+
+    themeToggle.addEventListener('click', () => {
+        body.classList.toggle('dark');
+        const isDark = body.classList.contains('dark');
+        
+        // Toggle icons
+        sunIcon.classList.toggle('hidden');
+        moonIcon.classList.toggle('hidden');
+        
+        // Save preference
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
+
+    // Toast Notifications
+    document.addEventListener('DOMContentLoaded', function() {
+        const toasts = document.querySelectorAll('.toast-message');
+        
+        toasts.forEach(toast => {
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                toast.classList.add('fade-out');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 5000);
+            
+            // Close button
+            const closeBtn = toast.querySelector('.toast-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    toast.classList.add('fade-out');
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 300);
+                });
+            }
+        });
+    });
+</script>
 
 </body>
 </html>

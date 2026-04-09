@@ -10,7 +10,14 @@ def home(request):
     """
     Home page view.
     """
-    return render(request, 'marketplace/home.html')
+    # Get featured services (active services with high ratings or recent)
+    featured_services = Service.objects.filter(is_active=True).order_by('-created_at')[:6]
+    categories = CATEGORY_CHOICES
+    context = {
+        'featured_services': featured_services,
+        'categories': categories,
+    }
+    return render(request, 'marketplace/home.html', context)
 
 def register(request):
     """
@@ -60,18 +67,52 @@ def dashboard(request):
         # Provider dashboard
         services = Service.objects.filter(provider=request.user)
         bookings = Booking.objects.filter(service__provider=request.user)
+        reviews = Review.objects.filter(service__provider=request.user)
+        
+        # Calculate stats
+        total_services = services.count()
+        total_bookings = bookings.count()
+        completed_bookings = bookings.filter(status='completed').count()
+        pending_bookings = bookings.filter(status='pending').count()
+        
+        if reviews:
+            average_rating = sum(review.rating for review in reviews) / len(reviews)
+            is_top_rated = average_rating >= 4.0
+        else:
+            average_rating = 0
+            is_top_rated = False
+        
         context = {
             'user_profile': user_profile,
             'services': services,
-            'bookings': bookings,
+            'bookings': bookings.order_by('-created_at'),
+            'total_services': total_services,
+            'total_bookings': total_bookings,
+            'completed_bookings': completed_bookings,
+            'pending_bookings': pending_bookings,
+            'average_rating': average_rating,
+            'is_top_rated': is_top_rated,
+            'review_count': reviews.count(),
         }
         return render(request, 'marketplace/provider_dashboard.html', context)
     else:
         # Customer dashboard
-        bookings = Booking.objects.filter(customer=request.user)
+        bookings = Booking.objects.filter(customer=request.user).order_by('-created_at')
+        reviews = Review.objects.filter(customer=request.user)
+        
+        # Calculate stats
+        total_bookings = bookings.count()
+        completed_bookings = bookings.filter(status='completed').count()
+        pending_bookings = bookings.filter(status='pending').count()
+        reviews_given = reviews.count()
+        
         context = {
             'user_profile': user_profile,
             'bookings': bookings,
+            'total_bookings': total_bookings,
+            'completed_bookings': completed_bookings,
+            'pending_bookings': pending_bookings,
+            'reviews_given': reviews_given,
         }
         return render(request, 'marketplace/customer_dashboard.html', context)
 
@@ -83,7 +124,7 @@ def profile(request):
     user_profile = get_object_or_404(UserProfile, user=request.user)
 
     if request.method == 'POST':
-        form = UserProfileForm(request.POST, instance=user_profile)
+        form = UserProfileForm(request.POST, request.FILES, instance=user_profile)
         if form.is_valid():
             form.save()
             messages.success(request, 'Profile updated successfully!')
@@ -98,7 +139,9 @@ def service_list(request):
     """
     List all active services with search and filter options.
     """
-    services = Service.objects.filter(is_active=True)
+    from django.db.models import Avg
+    
+    services = Service.objects.filter(is_active=True).prefetch_related('reviews')
     categories = CATEGORY_CHOICES
 
     # Search functionality
@@ -120,11 +163,27 @@ def service_list(request):
     if location:
         services = services.filter(location__icontains=location)
 
+    # Sorting
+    sort = request.GET.get('sort', '-created_at')
+    if sort == 'price_low':
+        services = services.order_by('price')
+    elif sort == 'price_high':
+        services = services.order_by('-price')
+    elif sort == 'rating':
+        # Sort by average rating (calculated in Python for now)
+        services_list = list(services)
+        services_list.sort(key=lambda s: s.average_rating(), reverse=True)
+        # Convert back to queryset for pagination
+        services = services.model.objects.filter(pk__in=[s.pk for s in services_list])
+    else:
+        services = services.order_by(sort)
+
     context = {
         'services': services,
         'categories': categories,
         'query': query,
         'selected_category': category,
+        'selected_sort': sort,
         'location': location,
     }
     return render(request, 'marketplace/service_list.html', context)
@@ -161,7 +220,7 @@ def create_service(request):
         return redirect('dashboard')
 
     if request.method == 'POST':
-        form = ServiceForm(request.POST)
+        form = ServiceForm(request.POST, request.FILES)
         if form.is_valid():
             service = form.save(commit=False)
             service.provider = request.user
@@ -180,7 +239,7 @@ def edit_service(request, pk):
     service = get_object_or_404(Service, pk=pk, provider=request.user)
 
     if request.method == 'POST':
-        form = ServiceForm(request.POST, instance=service)
+        form = ServiceForm(request.POST, request.FILES, instance=service)
         if form.is_valid():
             form.save()
             messages.success(request, 'Service updated successfully!')
@@ -279,3 +338,60 @@ def submit_review(request, booking_id):
     else:
         form = ReviewForm()
     return render(request, 'marketplace/submit_review.html', {'form': form, 'booking': booking})
+
+@login_required
+def delete_service(request, pk):
+    """
+    Delete a service (providers only).
+    """
+    service = get_object_or_404(Service, pk=pk, provider=request.user)
+    
+    if request.method == 'POST':
+        service.delete()
+        messages.success(request, 'Service deleted successfully!')
+        return redirect('dashboard')
+    
+    return render(request, 'marketplace/delete_service.html', {'service': service})
+
+def provider_profile(request, user_id):
+    """
+    View provider profile and their services/reviews.
+    """
+    provider = get_object_or_404(User, pk=user_id)
+    try:
+        user_profile = provider.userprofile
+        if user_profile.role != 'provider':
+            messages.error(request, 'This user is not a service provider.')
+            return redirect('home')
+    except UserProfile.DoesNotExist:
+        messages.error(request, 'User profile not found.')
+        return redirect('home')
+
+    services = Service.objects.filter(provider=provider, is_active=True)
+    reviews = Review.objects.filter(service__provider=provider).select_related('customer', 'service', 'booking')
+    
+    # Calculate stats
+    total_services = services.count()
+    total_bookings = Booking.objects.filter(service__provider=provider).count()
+    completed_bookings = Booking.objects.filter(service__provider=provider, status='completed').count()
+    
+    if reviews:
+        average_rating = sum(review.rating for review in reviews) / len(reviews)
+        is_top_rated = average_rating >= 4.0
+    else:
+        average_rating = 0
+        is_top_rated = False
+
+    context = {
+        'provider': provider,
+        'user_profile': user_profile,
+        'services': services,
+        'reviews': reviews.order_by('-created_at'),
+        'total_services': total_services,
+        'total_bookings': total_bookings,
+        'completed_bookings': completed_bookings,
+        'average_rating': average_rating,
+        'is_top_rated': is_top_rated,
+        'review_count': reviews.count(),
+    }
+    return render(request, 'marketplace/provider_profile.html', context)
